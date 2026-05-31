@@ -15,7 +15,7 @@ const server = http.createServer(app)
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://cig-media-platform.onrender.com'
+    'https://media-platformm.onrender.com'
   ],
   credentials: true
 }))
@@ -25,7 +25,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       'http://localhost:5173',
-      'https://cig-media-platform.onrender.com'
+      'https://media-platformm.onrender.com'
     ],
     methods: ['GET', 'POST']
   }
