@@ -9,15 +9,15 @@ export default function Login() {
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      const user = await login(form.email, form.password)
-      toast.success(`Welcome back, ${user.name}!`)
-      navigate('/')
-    } catch {
-      toast.error('Invalid email or password')
-    }
+  e.preventDefault()
+  try {
+    const user = await login(form.email, form.password)
+    toast.success(`Welcome back, ${user.name}!`)
+    navigate('/')
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Invalid email or password')
   }
+}
 
   const inputStyle = {
     width: '100%', background: 'rgba(255,255,255,0.05)',
