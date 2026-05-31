@@ -42,7 +42,7 @@ export default function Layout() {
       setUnread(r.data.filter(n => !n.isRead).length)
     }).catch(() => {})
 
-    const socket = io('http://localhost:5000', { auth: { token } })
+    const socket = io('https://media-platform-4br8.onrender.com', { auth: { token } })
     socket.on('notification', (notif) => {
       setNotifications(prev => [notif, ...prev])
       setUnread(prev => prev + 1)
