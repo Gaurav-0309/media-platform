@@ -6,13 +6,13 @@ import useAuthStore from '../store/authStore'
 import api from '../api/axios'
 
 const S = {
-  sidebar: { width: '240px', background: '#111111', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', padding: '24px 16px', position: 'fixed', height: '100vh', top: 0, left: 0 },
+  sidebar: { width: '240px', background: '#111111', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', padding: '24px 16px', position: 'fixed', height: '100vh', top: 0, left: 0, zIndex: 20 },
   logo: { fontSize: '20px', fontWeight: '700', color: '#7F77DD', marginBottom: '4px' },
   role: { fontSize: '12px', color: '#555', marginBottom: '32px' },
   nav: { display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 },
-  main: { marginLeft: '240px', display: 'flex', flexDirection: 'column', minHeight: '100vh' },
-  topbar: { height: '64px', background: '#111111', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 24px', gap: '16px', position: 'sticky', top: 0, zIndex: 10 },
-  content: { flex: 1, padding: '32px 32px' },
+  main: { marginLeft: '240px', display: 'flex', flexDirection: 'column', minHeight: '100vh', width: 'calc(100vw - 240px)' },
+  topbar: { height: '64px', background: '#111111', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 24px', gap: '16px', position: 'sticky', top: 0, zIndex: 10, width: '100%' },
+  content: { flex: 1, padding: '32px 40px', width: '100%', boxSizing: 'border-box' },
   avatar: { width: '36px', height: '36px', borderRadius: '50%', background: '#7F77DD', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#fff' },
   bellBtn: { position: 'relative', background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px' },
   badge: { position: 'absolute', top: '2px', right: '2px', background: '#ef4444', color: '#fff', fontSize: '10px', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' },
@@ -60,7 +60,8 @@ export default function Layout() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0f0f0f' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', background: '#0f0f0f', overflow: 'hidden' }}>
+
       {/* Sidebar */}
       <aside style={S.sidebar}>
         <div style={S.logo}>📸 CIG Media</div>
@@ -75,7 +76,8 @@ export default function Layout() {
           )}
         </nav>
 
-        <button style={S.logoutBtn} onClick={() => { logout(); navigate('/login') }}
+        <button style={S.logoutBtn}
+          onClick={() => { logout(); navigate('/login') }}
           onMouseEnter={e => e.target.style.color = '#ef4444'}
           onMouseLeave={e => e.target.style.color = '#555'}>
           🚪 Logout
@@ -84,19 +86,24 @@ export default function Layout() {
 
       {/* Main */}
       <div style={S.main}>
+
+        {/* Topbar */}
         <header style={S.topbar}>
           <div style={{ position: 'relative' }}>
             <button style={S.bellBtn} onClick={markRead}>
               🔔
               {unread > 0 && <span style={S.badge}>{unread}</span>}
             </button>
+
             {showNotifs && (
               <div style={S.notifPanel}>
                 <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)', fontSize: '14px', fontWeight: '600' }}>
                   Notifications
                 </div>
                 {notifications.length === 0 ? (
-                  <div style={{ padding: '24px', textAlign: 'center', color: '#555', fontSize: '13px' }}>No notifications yet</div>
+                  <div style={{ padding: '24px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+                    No notifications yet
+                  </div>
                 ) : notifications.map((n, i) => (
                   <div key={i} style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: !n.isRead ? 'rgba(127,119,221,0.08)' : 'transparent' }}>
                     <span style={{ fontWeight: '600', color: '#7F77DD', fontSize: '13px' }}>{n.actor?.name} </span>
@@ -108,9 +115,11 @@ export default function Layout() {
               </div>
             )}
           </div>
+
           <div style={S.avatar}>{user?.name?.[0]?.toUpperCase()}</div>
         </header>
 
+        {/* Page content */}
         <main style={S.content}>
           <Outlet />
         </main>
