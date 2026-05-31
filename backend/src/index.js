@@ -11,16 +11,19 @@ const User = require('./models/User')
 const app = express()
 const server = http.createServer(app)
 
-// ← CORS updated here
-app.use(cors({
+const corsOptions = {
   origin: [
     'http://localhost:5173',
     'https://media-platformm.onrender.com'
   ],
-  credentials: true
-}))
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}
 
-// ← Socket.io CORS updated here
+app.use(cors(corsOptions))
+app.use(express.json())
+
 const io = new Server(server, {
   cors: {
     origin: [
@@ -30,9 +33,6 @@ const io = new Server(server, {
     methods: ['GET', 'POST']
   }
 })
-
-app.use(express.json())
-app.options('*', cors()) 
 
 app.use((req, res, next) => {
   req.io = io
