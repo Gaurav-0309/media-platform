@@ -16,6 +16,8 @@ export default function EventPage() {
   const [comment, setComment] = useState('')
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [pendingFiles, setPendingFiles] = useState([])
+  const [previewing, setPreviewing] = useState(false)
 
   const canUpload = ['ADMIN', 'PHOTOGRAPHER'].includes(user?.role)
   const canDelete = (item) => user?.role === 'ADMIN' || item.uploadedBy?._id === user?._id
@@ -41,28 +43,58 @@ export default function EventPage() {
     finally { setLoading(false) }
   }
 
-  const onDrop = useCallback(async (acceptedFiles) => {
+  const onDrop = useCallback((acceptedFiles) => {
     if (!canUpload) return toast.error('You do not have upload permission')
+    const previews = acceptedFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name,
+      size: (file.size / 1024 / 1024).toFixed(2)
+    }))
+    setPendingFiles(previews)
+    setPreviewing(true)
+  }, [canUpload])
+
+  const confirmUpload = async () => {
     setUploading(true)
+    setPreviewing(false)
     try {
-      if (acceptedFiles.length === 1) {
+      if (pendingFiles.length === 1) {
         const formData = new FormData()
-        formData.append('file', acceptedFiles[0])
+        formData.append('file', pendingFiles[0].file)
         formData.append('eventId', id)
         formData.append('isPrivate', 'false')
-        await api.post('/media/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        await api.post('/media/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
       } else {
         const formData = new FormData()
-        acceptedFiles.forEach(f => formData.append('files', f))
+        pendingFiles.forEach(f => formData.append('files', f.file))
         formData.append('eventId', id)
         formData.append('isPrivate', 'false')
-        await api.post('/media/upload/bulk', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        await api.post('/media/upload/bulk', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
       }
-      toast.success(`${acceptedFiles.length} photo(s) uploaded!`)
+      toast.success(`${pendingFiles.length} photo(s) uploaded!`)
+      setPendingFiles([])
       fetchMedia(1)
     } catch { toast.error('Upload failed') }
     finally { setUploading(false) }
-  }, [id, canUpload])
+  }
+
+  const cancelUpload = () => {
+    pendingFiles.forEach(f => URL.revokeObjectURL(f.preview))
+    setPendingFiles([])
+    setPreviewing(false)
+  }
+
+  const removeFromPreview = (index) => {
+    setPendingFiles(prev => {
+      URL.revokeObjectURL(prev[index].preview)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop, accept: { 'image/*': [], 'video/*': [] }, disabled: !canUpload || uploading
@@ -119,6 +151,12 @@ export default function EventPage() {
     } catch { toast.error('Failed to delete photo') }
   }
 
+  const handleShare = (mediaId) => {
+    const shareUrl = `${window.location.origin}/events/${id}?photo=${mediaId}`
+    navigator.clipboard.writeText(shareUrl)
+    toast.success('Link copied to clipboard!')
+  }
+
   const btnBase = {
     background: 'none', border: 'none', cursor: 'pointer',
     fontSize: '13px', display: 'flex', alignItems: 'center',
@@ -154,29 +192,72 @@ export default function EventPage() {
 
       {/* Upload Zone */}
       {canUpload && (
-        <div {...getRootProps()} style={{
-          border: `2px dashed ${isDragActive ? '#7F77DD' : 'rgba(255,255,255,0.1)'}`,
-          borderRadius: '16px', padding: '40px', textAlign: 'center',
-          marginBottom: '32px', cursor: uploading ? 'not-allowed' : 'pointer',
-          background: isDragActive ? 'rgba(127,119,221,0.08)' : 'transparent',
-          transition: 'all 0.2s', opacity: uploading ? 0.5 : 1
-        }}>
-          <input {...getInputProps()} />
-          {uploading ? (
-            <div>
-              <div style={{ width: '32px', height: '32px', border: '2px solid #7F77DD', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-              <p style={{ color: '#666', fontSize: '14px' }}>Uploading and processing with AI tagging...</p>
-            </div>
-          ) : isDragActive ? (
-            <div>
-              <div style={{ fontSize: '40px', marginBottom: '8px' }}>📂</div>
-              <p style={{ color: '#7F77DD', fontWeight: '600' }}>Drop files here!</p>
+        <div style={{ marginBottom: '32px' }}>
+          {previewing && pendingFiles.length > 0 ? (
+            <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ color: '#fff', fontSize: '16px', fontWeight: '600', margin: 0 }}>
+                    Preview — {pendingFiles.length} file(s) selected
+                  </h3>
+                  <p style={{ color: '#666', fontSize: '13px', marginTop: '4px' }}>
+                    Review your photos before uploading
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={cancelUpload}
+                    style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: '10px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                  <button onClick={confirmUpload}
+                    style={{ background: '#7F77DD', border: 'none', color: '#fff', borderRadius: '10px', padding: '8px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                    Upload {pendingFiles.length} file(s) ☁️
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+                {pendingFiles.map((f, i) => (
+                  <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
+                    <img src={f.preview} alt={f.name}
+                      style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                    <div style={{ padding: '6px 8px', background: 'rgba(0,0,0,0.7)' }}>
+                      <p style={{ color: '#fff', fontSize: '11px', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
+                      <p style={{ color: '#888', fontSize: '10px', margin: 0 }}>{f.size} MB</p>
+                    </div>
+                    <button onClick={() => removeFromPreview(i)}
+                      style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: '6px', color: '#fff', width: '22px', height: '22px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
-            <div>
-              <div style={{ fontSize: '40px', marginBottom: '8px' }}>☁️</div>
-              <p style={{ color: '#fff', fontWeight: '500', marginBottom: '4px' }}>Drag & drop photos or videos here</p>
-              <p style={{ color: '#555', fontSize: '13px' }}>or click to browse — bulk upload supported</p>
+            <div {...getRootProps()} style={{
+              border: `2px dashed ${isDragActive ? '#7F77DD' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: '16px', padding: '40px', textAlign: 'center',
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              background: isDragActive ? 'rgba(127,119,221,0.08)' : 'transparent',
+              transition: 'all 0.2s', opacity: uploading ? 0.5 : 1
+            }}>
+              <input {...getInputProps()} />
+              {uploading ? (
+                <div>
+                  <div style={{ width: '32px', height: '32px', border: '2px solid #7F77DD', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+                  <p style={{ color: '#666', fontSize: '14px' }}>Uploading and processing with AI tagging...</p>
+                </div>
+              ) : isDragActive ? (
+                <div>
+                  <div style={{ fontSize: '40px', marginBottom: '8px' }}>📂</div>
+                  <p style={{ color: '#7F77DD', fontWeight: '600' }}>Drop files here!</p>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize: '40px', marginBottom: '8px' }}>☁️</div>
+                  <p style={{ color: '#fff', fontWeight: '500', marginBottom: '4px' }}>Drag & drop photos or videos here</p>
+                  <p style={{ color: '#555', fontSize: '13px' }}>or click to browse — bulk upload supported</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -204,7 +285,6 @@ export default function EventPage() {
                 onClick={() => setSelectedPhoto(item)}>
                 <img src={item.thumbnailUrl || item.cdnUrl} alt=""
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
-
                 <div className="media-overlay" style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', transition: 'background 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '10px' }}>
                   {canDelete(item) && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -220,7 +300,6 @@ export default function EventPage() {
                     <span style={{ fontSize: '13px', color: '#fff' }}>💬 {item.comments?.length || 0}</span>
                   </div>
                 </div>
-
                 {item.aiTags?.length > 0 && (
                   <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.65)', padding: '3px 8px', borderRadius: '20px', fontSize: '11px', color: '#fff' }}>
                     🏷️ {item.aiTags[0].label}
@@ -245,16 +324,10 @@ export default function EventPage() {
       {selectedPhoto && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
           <div style={{ background: '#111', borderRadius: '20px', overflow: 'hidden', maxWidth: '960px', width: '100%', maxHeight: '90vh', display: 'flex' }}>
-
-            {/* Image */}
             <div style={{ flex: 1, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
               <img src={selectedPhoto.cdnUrl} alt="" style={{ maxHeight: '80vh', objectFit: 'contain', width: '100%' }} />
             </div>
-
-            {/* Sidebar */}
             <div style={{ width: '320px', display: 'flex', flexDirection: 'column', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
-
-              {/* Uploader info */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#7F77DD', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700' }}>
@@ -269,7 +342,6 @@ export default function EventPage() {
                   style={{ background: 'none', border: 'none', color: '#666', fontSize: '20px', cursor: 'pointer' }}>✕</button>
               </div>
 
-              {/* AI Tags */}
               {selectedPhoto.aiTags?.length > 0 && (
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                   <p style={{ fontSize: '11px', color: '#555', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Tags</p>
@@ -283,8 +355,7 @@ export default function EventPage() {
                 </div>
               )}
 
-              {/* Actions */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexWrap: 'wrap' }}>
                 <button onClick={() => handleLike(selectedPhoto._id)}
                   style={{ ...btnBase, color: selectedPhoto._liked ? '#ef4444' : '#888' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
@@ -292,10 +363,16 @@ export default function EventPage() {
                   {selectedPhoto._liked ? '❤️' : '🤍'} {selectedPhoto.likes?.length || 0}
                 </button>
                 <button onClick={() => handleFavourite(selectedPhoto._id)}
-                  style={{ ...btnBase, color: '#888', marginLeft: '8px' }}
+                  style={{ ...btnBase, color: '#888' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#eab308'}
                   onMouseLeave={e => e.currentTarget.style.color = '#888'}>
                   ⭐ Save
+                </button>
+                <button onClick={() => handleShare(selectedPhoto._id)}
+                  style={{ ...btnBase, color: '#888' }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#3b82f6'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#888'}>
+                  🔗 Share
                 </button>
                 <button onClick={() => handleDownload(selectedPhoto._id)}
                   style={{ ...btnBase, color: '#888', marginLeft: 'auto' }}
@@ -313,7 +390,6 @@ export default function EventPage() {
                 )}
               </div>
 
-              {/* Comments */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
                 <p style={{ fontSize: '11px', color: '#555', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Comments ({selectedPhoto.comments?.length || 0})
@@ -328,7 +404,6 @@ export default function EventPage() {
                 ))}
               </div>
 
-              {/* Add comment */}
               <form onSubmit={handleComment} style={{ display: 'flex', gap: '8px', padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                 <input value={comment} onChange={e => setComment(e.target.value)} placeholder="Add a comment..."
                   style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '13px', outline: 'none' }} />

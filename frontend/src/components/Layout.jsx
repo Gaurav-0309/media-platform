@@ -61,21 +61,18 @@ export default function Layout() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', background: '#0f0f0f', overflow: 'hidden' }}>
-
-      {/* Sidebar */}
       <aside style={S.sidebar}>
         <div style={S.logo}>📸 CIG Media</div>
         <div style={S.role}>{user?.name} · {user?.role}</div>
-
         <nav style={S.nav}>
           <NavLink to="/" end style={({ isActive }) => navLinkStyle(isActive)}>🏠 Home</NavLink>
+          <NavLink to="/search" style={({ isActive }) => navLinkStyle(isActive)}>🔍 Search</NavLink>
           <NavLink to="/my-photos" style={({ isActive }) => navLinkStyle(isActive)}>🤳 My Photos</NavLink>
           <NavLink to="/favourites" style={({ isActive }) => navLinkStyle(isActive)}>❤️ Favourites</NavLink>
           {user?.role === 'ADMIN' && (
             <NavLink to="/admin" style={({ isActive }) => navLinkStyle(isActive)}>⚙️ Dashboard</NavLink>
           )}
         </nav>
-
         <button style={S.logoutBtn}
           onClick={() => { logout(); navigate('/login') }}
           onMouseEnter={e => e.target.style.color = '#ef4444'}
@@ -84,17 +81,13 @@ export default function Layout() {
         </button>
       </aside>
 
-      {/* Main */}
       <div style={S.main}>
-
-        {/* Topbar */}
         <header style={S.topbar}>
           <div style={{ position: 'relative' }}>
             <button style={S.bellBtn} onClick={markRead}>
               🔔
               {unread > 0 && <span style={S.badge}>{unread}</span>}
             </button>
-
             {showNotifs && (
               <div style={S.notifPanel}>
                 <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)', fontSize: '14px', fontWeight: '600' }}>
@@ -115,11 +108,9 @@ export default function Layout() {
               </div>
             )}
           </div>
-
           <div style={S.avatar}>{user?.name?.[0]?.toUpperCase()}</div>
         </header>
 
-        {/* Page content */}
         <main style={S.content}>
           <Outlet />
         </main>
