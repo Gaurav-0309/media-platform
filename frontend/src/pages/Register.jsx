@@ -19,55 +19,139 @@ export default function Register() {
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
-      <div className="w-full max-w-md bg-[#111] border border-white/10 rounded-2xl p-8">
-        <h1 className="text-2xl font-bold mb-1">Create account 🚀</h1>
-        <p className="text-gray-400 text-sm mb-8">Join the CIG Media Platform</p>
+  const inputStyle = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    borderRadius: '12px',
+    padding: '12px 16px',
+    color: '#fff',
+    fontSize: '14px',
+    outline: 'none',
+    boxSizing: 'border-box',
+  }
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {[
-            { label: 'Full Name',       key: 'name',     type: 'text',     placeholder: 'Your name' },
-            { label: 'Email',           key: 'email',    type: 'email',    placeholder: 'you@example.com' },
-            { label: 'Password',        key: 'password', type: 'password', placeholder: '••••••••' },
-          ].map(({ label, key, type, placeholder }) => (
-            <div key={key}>
-              <label className="text-sm text-gray-400 mb-1 block">{label}</label>
-              <input
-                type={type} required
-                value={form[key]}
-                onChange={e => setForm({...form, [key]: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary"
-                placeholder={placeholder}
-              />
-            </div>
-          ))}
+  const selectStyle = {
+    width: '100%',
+    background: '#1e1e2e',
+    border: '1px solid rgba(255,255,255,0.15)',
+    borderRadius: '12px',
+    padding: '12px 16px',
+    color: '#fff',
+    fontSize: '14px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    cursor: 'pointer',
+    appearance: 'auto',
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#0f0f0f'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '420px',
+        background: '#111',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '24px',
+        padding: '40px',
+        margin: '20px'
+      }}>
+        <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#fff', marginBottom: '8px' }}>
+          Create account 🚀
+        </h1>
+        <p style={{ color: '#666', fontSize: '14px', marginBottom: '32px' }}>
+          Join the CIG Media Platform
+        </p>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
           <div>
-            <label className="text-sm text-gray-400 mb-1 block">Role</label>
+            <label style={{ fontSize: '13px', color: '#888', display: 'block', marginBottom: '6px' }}>
+              Full Name
+            </label>
+            <input
+              type="text" required
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              style={inputStyle}
+              placeholder="Your name"
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: '13px', color: '#888', display: 'block', marginBottom: '6px' }}>
+              Email
+            </label>
+            <input
+              type="email" required
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+              style={inputStyle}
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: '13px', color: '#888', display: 'block', marginBottom: '6px' }}>
+              Password
+            </label>
+            <input
+              type="password" required
+              value={form.password}
+              onChange={e => setForm({ ...form, password: e.target.value })}
+              style={inputStyle}
+              placeholder="••••••••"
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: '13px', color: '#888', display: 'block', marginBottom: '6px' }}>
+              Role
+            </label>
             <select
               value={form.role}
-              onChange={e => setForm({...form, role: e.target.value})}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary"
+              onChange={e => setForm({ ...form, role: e.target.value })}
+              style={selectStyle}
             >
-              <option value="VIEWER">Viewer</option>
-              <option value="MEMBER">Club Member</option>
-              <option value="PHOTOGRAPHER">Photographer</option>
-              <option value="ADMIN">Admin</option>
+              <option value="VIEWER"       style={{ background: '#1e1e2e', color: '#fff' }}>Viewer</option>
+              <option value="MEMBER"       style={{ background: '#1e1e2e', color: '#fff' }}>Club Member</option>
+              <option value="PHOTOGRAPHER" style={{ background: '#1e1e2e', color: '#fff' }}>Photographer</option>
+              <option value="ADMIN"        style={{ background: '#1e1e2e', color: '#fff' }}>Admin</option>
             </select>
           </div>
 
           <button
-            type="submit" disabled={loading}
-            className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 rounded-xl transition mt-2 disabled:opacity-50"
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              background: loading ? '#444' : '#7F77DD',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '14px',
+              fontSize: '15px',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: '8px',
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#534AB7' }}
+            onMouseLeave={e => { if (!loading) e.currentTarget.style.background = '#7F77DD' }}
           >
             {loading ? 'Creating...' : 'Create Account'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p style={{ textAlign: 'center', fontSize: '13px', color: '#555', marginTop: '24px' }}>
           Already have an account?{' '}
-          <Link to="/login" className="text-primary hover:underline">Sign in</Link>
+          <Link to="/login" style={{ color: '#7F77DD', textDecoration: 'none' }}>Sign in</Link>
         </p>
       </div>
     </div>
