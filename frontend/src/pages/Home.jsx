@@ -39,25 +39,37 @@ export default function Home() {
   const handleSearch = (e) => { e.preventDefault(); fetchEvents() }
 
   const createEvent = async (e) => {
-    e.preventDefault()
-    try {
-      await api.post('/events', newEvent)
-      toast.success('Event created!')
-      setShowCreateModal(false)
-      setNewEvent({ title: '', description: '', category: 'Cultural', eventDate: '', isPrivate: false })
-      fetchEvents()
-    } catch { toast.error('Failed to create event') }
+  e.preventDefault()
+  try {
+    const eventData = {
+      ...newEvent,
+      eventDate: new Date(newEvent.eventDate).toISOString()
+    }
+    await api.post('/events', eventData)
+    toast.success('Event created!')
+    setShowCreateModal(false)
+    setNewEvent({ title: '', description: '', category: 'Cultural', eventDate: '', isPrivate: false })
+    fetchEvents()
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Failed to create event')
   }
+}
 
-  const updateEvent = async (e) => {
-    e.preventDefault()
-    try {
-      await api.put(`/events/${editingEvent._id}`, editingEvent)
-      setEvents(prev => prev.map(ev => ev._id === editingEvent._id ? { ...ev, ...editingEvent } : ev))
-      setEditingEvent(null)
-      toast.success('Event updated!')
-    } catch { toast.error('Failed to update event') }
+const updateEvent = async (e) => {
+  e.preventDefault()
+  try {
+    const eventData = {
+      ...editingEvent,
+      eventDate: new Date(editingEvent.eventDate).toISOString()
+    }
+    await api.put(`/events/${editingEvent._id}`, eventData)
+    setEvents(prev => prev.map(ev => ev._id === editingEvent._id ? { ...ev, ...editingEvent } : ev))
+    setEditingEvent(null)
+    toast.success('Event updated!')
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Failed to update event')
   }
+}
 
   const deleteEvent = async (id) => {
     if (!window.confirm('Delete this event and all its photos?')) return
